@@ -15,7 +15,7 @@ def dbfs_to_threshold(dbfs_value):
     """
     return 10 ** (dbfs_value / 20)
 
-def loudness_normalize_with_limiting(input_file, output_file, target_loudness=-23, limit_threshold=0.95):
+def loudness_normalize_with_limiting(input_file, output_file, target_loudness):
     # Load audio file
     data, rate = sf.read(input_file)
     
@@ -26,18 +26,23 @@ def loudness_normalize_with_limiting(input_file, output_file, target_loudness=-2
     current_loudness = meter.integrated_loudness(data)
     
     print(f"Current loudness: {current_loudness:.2f} LUFS")
+
+    # Get gain required to reach target loudness
+    gain = target_loudness - current_loudness
+    
+    # Apply limiter first
+    print(f"Limiter threshold: {-1 * gain:.2f} LUFS")
+    target_threshold = dbfs_to_threshold((-1 * gain))
+    limiter = Limiter(threshold=target_threshold)
+    limited_audio = limiter.limit(data)
     
     # Normalize audio
-    normalized_audio = pyln.normalize.loudness(data, current_loudness, target_loudness)
+    normalized_audio = pyln.normalize.loudness(limited_audio, current_loudness, target_loudness)
     
-    # Apply limiter
-    limiter = Limiter(threshold=limit_threshold)
-    limited_audio = limiter.limit(normalized_audio)
-
-    print(f'Normalized loudness: {meter.integrated_loudness(limited_audio):.2f} LUFS')
+    print(f'Normalized loudness: {meter.integrated_loudness(normalized_audio):.2f} LUFS')
     
     # Save processed audio
-    sf.write(output_file, limited_audio, rate)
+    sf.write(output_file, normalized_audio, rate)
     
     print(f"Processed audio saved to: {output_file}")
 
@@ -49,8 +54,10 @@ def loudness_normalize_with_limiting(input_file, output_file, target_loudness=-2
 # print(f'-6dBFS = {dbfs_to_threshold(-6)}')
 # loudness_normalize_with_limiting(input_file, output_file)
 
-wav_files = glob.glob('../../data/*.wav')
+wav_files = glob.glob('data/*.wav', recursive=True)
 for wav_file in wav_files:
     # remove .wav from filename
     filename = Path(wav_file).stem
-    loudness_normalize_with_limiting(wav_file, f'{filename}_processed.wav')
+    if not os.path.exists('normalized'):
+        os.makedirs('normalized')
+    loudness_normalize_with_limiting(wav_file, f'normalized/{filename}_normalized_-23LUFS.wav', target_loudness=-23)
