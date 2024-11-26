@@ -2,6 +2,7 @@ import soundfile as sf
 import pyloudnorm as pyln
 import numpy as np
 from cylimiter import Limiter
+import noisereduce as nr
 
 import os, glob
 from pathlib import Path
@@ -15,12 +16,22 @@ def dbfs_to_threshold(dbfs_value):
     """
     return 10 ** (dbfs_value / 20)
 
-def loudness_normalize_with_limiting(input_file, output_file, target_loudness):
+def loudness_normalize_with_limiting(input_file, output_file, target_loudness, noise_file=None):
     # Load audio file
     data, rate = sf.read(input_file)
     
     # Create Meter object
     meter = pyln.Meter(rate)
+
+    if (noise_file != None):
+        data_noise, rate_noise = sf.read(noise_file)
+        print("processing stationary noise reduction")
+        data = nr.reduce_noise(y = data, sr=rate_noise, stationary=True, y_noise=data_noise, prop_decrease=0.95)
+        # sf.write(output_file, data, rate)
+        # return
+    else:
+        print("processing non-stationary noise reduction")
+        data = nr.reduce_noise(y = data, sr=rate, stationary=False, prop_decrease=0.95)
     
     # Calculate integrated loudness
     current_loudness = meter.integrated_loudness(data)
@@ -52,12 +63,15 @@ def loudness_normalize_with_limiting(input_file, output_file, target_loudness):
 # print(f'-1dBFS = {dbfs_to_threshold(-1)}')
 # print(f'-3dBFS = {dbfs_to_threshold(-3)}')
 # print(f'-6dBFS = {dbfs_to_threshold(-6)}')
-# loudness_normalize_with_limiting(input_file, output_file)
+input_audio = "data/aaa"
+input_noise = "data/aaa_noise.wav"
+# loudness_normalize_with_limiting(f"{input_audio}.wav", f"{input_audio}_normalized.wav", -23, noise_file=input_noise)
+loudness_normalize_with_limiting(f"{input_audio}.wav", f"{input_audio}_normalized.wav", -23, noise_file=None)
 
-wav_files = glob.glob('data/*.wav', recursive=True)
-for wav_file in wav_files:
-    # remove .wav from filename
-    filename = Path(wav_file).stem
-    if not os.path.exists('normalized'):
-        os.makedirs('normalized')
-    loudness_normalize_with_limiting(wav_file, f'normalized/{filename}_normalized_-23LUFS.wav', target_loudness=-23)
+# wav_files = glob.glob('data/*.wav', recursive=True)
+# for wav_file in wav_files:
+#     # remove .wav from filename
+#     filename = Path(wav_file).stem
+#     if not os.path.exists('normalized'):
+#         os.makedirs('normalized')
+#     loudness_normalize_with_limiting(wav_file, f'normalized/{filename}_normalized_-23LUFS.wav', target_loudness=-23)

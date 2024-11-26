@@ -3,3 +3,4 @@ numpy
 pyloudnorm
 cylimiter
 soundfile
+noisereduce
