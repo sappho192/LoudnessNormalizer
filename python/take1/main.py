@@ -16,22 +16,15 @@ def dbfs_to_threshold(dbfs_value):
     """
     return 10 ** (dbfs_value / 20)
 
-def loudness_normalize_with_limiting(input_file, output_file, target_loudness, noise_file=None):
+def loudness_normalize_with_limiting(input_file, output_file, target_loudness, apply_nr=True, noise_file=None):
     # Load audio file
     data, rate = sf.read(input_file)
     
     # Create Meter object
     meter = pyln.Meter(rate)
 
-    if (noise_file != None):
-        data_noise, rate_noise = sf.read(noise_file)
-        print("processing stationary noise reduction")
-        data = nr.reduce_noise(y = data, sr=rate_noise, stationary=True, y_noise=data_noise, prop_decrease=0.95)
-        # sf.write(output_file, data, rate)
-        # return
-    else:
-        print("processing non-stationary noise reduction")
-        data = nr.reduce_noise(y = data, sr=rate, stationary=False, prop_decrease=0.95)
+    if (apply_nr == True):
+        data = noise_reduction(noise_file, data, rate)
     
     # Calculate integrated loudness
     current_loudness = meter.integrated_loudness(data)
@@ -57,6 +50,18 @@ def loudness_normalize_with_limiting(input_file, output_file, target_loudness, n
     
     print(f"Processed audio saved to: {output_file}")
 
+def noise_reduction(noise_file, data, rate):
+    if (noise_file != None):
+        data_noise, rate_noise = sf.read(noise_file)
+        print("processing stationary noise reduction")
+        data = nr.reduce_noise(y = data, sr=rate_noise, stationary=True, y_noise=data_noise, prop_decrease=0.95)
+        # sf.write(output_file, data, rate)
+        # return
+    else:
+        print("processing non-stationary noise reduction")
+        data = nr.reduce_noise(y = data, sr=rate, stationary=False, prop_decrease=0.95)
+    return data
+
 # Example usage
 
 # print(f'-0.5dBFS = {dbfs_to_threshold(-0.5)}')
@@ -66,7 +71,7 @@ def loudness_normalize_with_limiting(input_file, output_file, target_loudness, n
 input_audio = "data/aaa"
 input_noise = "data/aaa_noise.wav"
 # loudness_normalize_with_limiting(f"{input_audio}.wav", f"{input_audio}_normalized.wav", -23, noise_file=input_noise)
-loudness_normalize_with_limiting(f"{input_audio}.wav", f"{input_audio}_normalized.wav", -23, noise_file=None)
+loudness_normalize_with_limiting(f"{input_audio}.wav", f"{input_audio}_normalized.wav", -23, apply_nr=False, noise_file=None)
 
 # wav_files = glob.glob('data/*.wav', recursive=True)
 # for wav_file in wav_files:
