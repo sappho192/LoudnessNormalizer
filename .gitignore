@@ -1,4 +1,5 @@
 *.wav
+*.flac
 normalized/*.png
 
 # Byte-compiled / optimized / DLL files
