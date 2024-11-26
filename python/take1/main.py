@@ -37,7 +37,7 @@ def loudness_normalize_with_limiting(input_file, target_loudness, apply_nr=True,
     
     # Apply limiter first
     print(f"Limiter threshold: {-1 * gain:.2f} LUFS")
-    target_threshold = dbfs_to_threshold((-1 * gain))
+    target_threshold = dbfs_to_threshold((-1 * gain) - 1) # attenuate 1 more lufs
     limiter = Limiter(threshold=target_threshold)
     limited_audio = limiter.limit(data)
     
