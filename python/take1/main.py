@@ -7,6 +7,16 @@ import noisereduce as nr
 import os, glob
 from pathlib import Path
 
+import time
+
+class TimeResult:
+    def __init__(self, name: str, duration: float):
+        self.name = name
+        self.duration = duration
+
+    def __str__(self) -> str:
+        return f"{self.name}: {self.duration:.2f} seconds"
+
 def dbfs_to_threshold(dbfs_value):
     """
     Convert dBFS to a threshold value between 0 and 1.
@@ -40,6 +50,8 @@ def loudness_normalize_with_limiting(input_file, target_loudness, apply_nr=True,
     target_threshold = dbfs_to_threshold((-1 * gain) - 1) # attenuate 1 more lufs
     limiter = Limiter(threshold=target_threshold)
     limited_audio = limiter.limit(data)
+    current_loudness = meter.integrated_loudness(limited_audio)
+    print(f"Current loudness: {current_loudness:.2f} LUFS")
     
     # Normalize audio
     normalized_audio = pyln.normalize.loudness(limited_audio, current_loudness, target_loudness)
@@ -76,9 +88,25 @@ def noise_reduction(noise_file, data, audio_rate, prop_decrease):
 # print(f'-6dBFS = {dbfs_to_threshold(-6)}')
 input_audio = "data/aaa"
 input_noise = "data/aaa_noise.wav"
+
+start_time = time.perf_counter()
 loudness_normalize_with_limiting(input_audio, -23, apply_nr=False, noise_file=None) # Normalization without NR
+end_time = time.perf_counter()
+benchmark_normalize = TimeResult("Normalize", end_time - start_time)
+
+start_time = time.perf_counter()
 loudness_normalize_with_limiting(input_audio, -23, apply_nr=True, noise_file=input_noise, noise_prop_decrease=0.8) # Stationary NR
+end_time = time.perf_counter()
+benchmark_normalize_nr = TimeResult("Normalize with Stationary NR", end_time - start_time)
+
+start_time = time.perf_counter()
 loudness_normalize_with_limiting(input_audio, -23, apply_nr=True, noise_file=None, noise_prop_decrease=0.85) # Non-stationary NR
+end_time = time.perf_counter()
+benchmark_normalize_nr_nst = TimeResult("Normalize with Non-stationary NR", end_time - start_time)
+
+print(benchmark_normalize)
+print(benchmark_normalize_nr)
+print(benchmark_normalize_nr_nst)
 
 # wav_files = glob.glob('data/*.wav', recursive=True)
 # for wav_file in wav_files:
