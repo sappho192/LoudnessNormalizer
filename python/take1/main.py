@@ -30,6 +30,7 @@ def loudness_normalize_with_limiting(input_file, target_loudness, apply_nr=True,
     # Load audio file
     data, rate = sf.read(input_file)
     input_file_stem = Path(input_file).absolute().parent / Path(input_file).stem
+    output_file_stem = Path(input_file).absolute().parent.parent / 'normalized' / Path(input_file).stem
     
     # Create Meter object
     meter = pyln.Meter(rate)
@@ -65,7 +66,7 @@ def loudness_normalize_with_limiting(input_file, target_loudness, apply_nr=True,
             output_file_suffix += f"_st_{noise_prop_decrease}"
         else: # Non-stationary NR
             output_file_suffix += f"_nst_{noise_prop_decrease}"
-    output_filename = f"{input_file_stem}{output_file_suffix}.flac"
+    output_filename = f"{output_file_stem}{output_file_suffix}.flac"
     sf.write(output_filename, normalized_audio, rate)
     
     print(f"Processed audio saved to: {output_filename}")
