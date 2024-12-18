@@ -90,24 +90,44 @@ def noise_reduction(noise_file, data, audio_rate, prop_decrease):
 input_audio = "data/aaa"
 input_noise = "data/aaa_noise.wav"
 
-start_time = time.perf_counter()
-loudness_normalize_with_limiting(input_audio, -23, apply_nr=False, noise_file=None) # Normalization without NR
-end_time = time.perf_counter()
-benchmark_normalize = TimeResult("Normalize", end_time - start_time)
+def simple_comparison():
+    start_time = time.perf_counter()
+    loudness_normalize_with_limiting(input_audio, -23, apply_nr=False, noise_file=None) # Normalization without NR
+    end_time = time.perf_counter()
+    benchmark_normalize = TimeResult("Normalize", end_time - start_time)
 
-start_time = time.perf_counter()
-loudness_normalize_with_limiting(input_audio, -23, apply_nr=True, noise_file=input_noise, noise_prop_decrease=0.8) # Stationary NR
-end_time = time.perf_counter()
-benchmark_normalize_nr = TimeResult("Normalize with Stationary NR", end_time - start_time)
+    start_time = time.perf_counter()
+    loudness_normalize_with_limiting(input_audio, -23, apply_nr=True, noise_file=input_noise, noise_prop_decrease=0.8) # Stationary NR
+    end_time = time.perf_counter()
+    benchmark_normalize_nr = TimeResult("Normalize with Stationary NR", end_time - start_time)
 
-start_time = time.perf_counter()
-loudness_normalize_with_limiting(input_audio, -23, apply_nr=True, noise_file=None, noise_prop_decrease=0.85) # Non-stationary NR
-end_time = time.perf_counter()
-benchmark_normalize_nr_nst = TimeResult("Normalize with Non-stationary NR", end_time - start_time)
+    start_time = time.perf_counter()
+    loudness_normalize_with_limiting(input_audio, -23, apply_nr=True, noise_file=None, noise_prop_decrease=0.85) # Non-stationary NR
+    end_time = time.perf_counter()
+    benchmark_normalize_nr_nst = TimeResult("Normalize with Non-stationary NR", end_time - start_time)
 
-print(benchmark_normalize)
-print(benchmark_normalize_nr)
-print(benchmark_normalize_nr_nst)
+    print(benchmark_normalize)
+    print(benchmark_normalize_nr)
+    print(benchmark_normalize_nr_nst)
+# simple_comparison()
+
+def stationary_nr_comparison():
+    noise_props = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 1.0]
+
+    for noise_prop in noise_props:
+        loudness_normalize_with_limiting(
+            # Stationary NR
+            input_audio, -23, apply_nr=True, noise_file=input_noise, noise_prop_decrease=noise_prop)
+stationary_nr_comparison()
+
+def non_stationary_nr_comparison():
+    noise_props = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 1.0]
+
+    for noise_prop in noise_props:
+        loudness_normalize_with_limiting(
+            # Non-stationary NR
+            input_audio, -23, apply_nr=True, noise_file=None, noise_prop_decrease=noise_prop)
+non_stationary_nr_comparison()
 
 # wav_files = glob.glob('data/*.wav', recursive=True)
 # for wav_file in wav_files:
