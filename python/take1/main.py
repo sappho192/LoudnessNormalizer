@@ -47,8 +47,14 @@ def loudness_normalize_with_limiting(input_file, target_loudness, apply_nr=True,
     gain = target_loudness - current_loudness
     
     # Apply limiter first
-    print(f"Limiter threshold: {-1 * gain:.2f} LUFS")
-    target_threshold = dbfs_to_threshold((-1 * gain) - 1) # attenuate 1 more lufs
+    target_threshold = 0
+    if (gain < 0): # Which means current loudness is higher than target
+        print(f"Limiter threshold: -1 LUFS")
+        target_threshold = dbfs_to_threshold(-1) # Just polish some peak noise a bit
+    else:
+        target_threshold_dbfs = (-1 * gain) - 1
+        print(f"Limiter threshold: {target_threshold_dbfs:.2f} LUFS")
+        target_threshold = dbfs_to_threshold(target_threshold_dbfs)
     limiter = Limiter(threshold=target_threshold)
     limited_audio = limiter.limit(data)
     current_loudness = meter.integrated_loudness(limited_audio)
